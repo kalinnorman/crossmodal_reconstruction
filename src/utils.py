@@ -57,7 +57,31 @@ def generate_fov_geometry(min_r, max_r, az_deg, el_deg):
     return lines
 
 def generate_elevation_arc(r_feat, theta_feat, el_deg):
-    """ Generates line segments that make up the elevation arc at a specified range and azimuth location. """
+    """ Generates line segments that make up the elevation arc at a specified range and azimuth location (for FLS feature ambiguity). """
     el_limit = np.deg2rad(el_deg) / 2.0
     phi_vals = np.linspace(-el_limit, el_limit, 50)
     return np.array([spherical_to_cartesian(r_feat, theta_feat, phi) for phi in phi_vals])
+
+def generate_azimuth_elevation_surface_lines(r, az_deg, el_deg, density=10):
+    """ Generates grid of lines that make up the azimuth/elevation surface at a specified range (for SSS feature ambiguity) """
+    az_limit = np.deg2rad(az_deg) / 2.0
+    el_limit = np.deg2rad(el_deg) / 2.0
+    
+    lines = []
+    # 1. Lines of Constant Elevation (sweeping Azimuth)
+    # Generate 'density' number of horizontal arcs
+    el_vals = np.linspace(-el_limit, el_limit, density)
+    az_sweep = np.linspace(-az_limit, az_limit, 50)
+    for phi in el_vals:
+        # Create an arc for this fixed elevation
+        arc = np.array([spherical_to_cartesian(r, theta, phi) for theta in az_sweep])
+        lines.append(arc)
+    # 2. Lines of Constant Azimuth (sweeping Elevation)
+    # Generate 'density' number of vertical arcs
+    az_vals = np.linspace(-az_limit, az_limit, density)
+    el_sweep = np.linspace(-el_limit, el_limit, 50)
+    for theta in az_vals:
+        # Create an arc for this fixed azimuth
+        arc = np.array([spherical_to_cartesian(r, theta, phi) for phi in el_sweep])
+        lines.append(arc)
+    return lines
